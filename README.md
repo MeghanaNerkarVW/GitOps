@@ -22,3 +22,9 @@ The Push-based deployment strategy is implemented by popular CI/CD tools such as
 
 * Pull-based Deployments:
 Pull-based deployment approach, the operator is introduced. here you have a agent installed in the enviroment like in kubernetes cluster it takes over the role of the pipeline by actively pulling the changes from git repository, comparing the desired state in the environment repository with the actual state in the deployed infrastructure. Whenever differences are noticed, the operator updates the infrastructure to match the environment repository. Additionally the image registry can be monitored to find new versions of images to deploy.
+
+
+https://volkswagengroup.sharepoint.com/sites/VWITSJAVAFullStackAWSCloudAoE/Shared%20Documents/Forms/AllItems.aspx
+
+
+https://dev.to/iaadidev/gitops-a-comprehensive-guide-909
