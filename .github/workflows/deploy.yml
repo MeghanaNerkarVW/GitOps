@@ -7,7 +7,7 @@ on:
       - main
       - dev
       - staging
-      - production
+      - prod
 
 jobs:
   deploy:
@@ -31,7 +31,7 @@ jobs:
       id: env
       run: |
         if [[ "${{ github.ref_name }}" == "main" ]]; then
-          echo "env=production" >> $GITHUB_ENV
+          echo "env=prod" >> $GITHUB_ENV
         elif [[ "${{ github.ref_name }}" == "staging" ]]; then
           echo "env=staging" >> $GITHUB_ENV
         else
