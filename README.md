@@ -1,30 +1,109 @@
-# What is GitOps?
+Table of Contents
+=================
 
-GitOps is an operational framework that takes DevOps best practices used for application development such as version control, collaboration, compliance, and CI/CD, and applies them to infrastructure automation.
-
-GitOps is not a single product, plugin, or platform. GitOps is an approach that leverages Git as a single source of truth for the desired state of the entire system, enabling continuous deployment of cloud-native applications. It works by using Git repositories as the source of truth for both application and infrastructure code, ensuring that any changes to the system are version-controlled, auditable, and can be rolled back.
-
-
-GitOps requires three core components:
-
-1. IaC : GitOps uses a Git repository as the single source of truth for infrastructure definitions. Git is an open source version control system that tracks code management changes, and a Git repository is a .git folder in a project that tracks all changes made to files in a project over time. Infrastructure as code (IaC) is the practice of keeping all infrastructure configuration stored as code. The actual desired state may or may not be not stored as code (e.g., number of replicas or pods).
-
-2. MRs: GitOps uses merge requests (MRs) or pull requests (PRs) as the change mechanism for all infrastructure updates. The MR or PR is where teams can collaborate via reviews and comments and where formal approvals take place. A merge commits to your main (or trunk) branch and serves as an audit log or audit trail.
-
-3. CI/CD: GitOps automates infrastructure updates using a Git workflow with continuous integration and continuous delivery (CI/CD). When new code is merged, the CI/CD pipeline enacts the change in the environment. Any configuration drift, such as manual changes or errors, is overwritten by GitOps automation so the environment converges on the desired state defined in Git. GitLab uses CI/CD pipelines to manage and implement GitOps automation, but other forms of automation, such as definitions operators, can be used as well.
+* [Project-Overview](#Project-Overview)
+* [Prerequisite](#Prerequisite)
+* [Project-Structure](#Project-Structure)
+* [Development](#Development)
+* [Documentation](#Documentation)
 
 
-There are two ways to implement the deployment strategy for GitOps: Push-based and Pull-based deployments. 
+## Project-Overview
 
-* Push-based Deployments:
-The Push-based deployment strategy is implemented by popular CI/CD tools such as Jenkins, CircleCI, or Travis CI. The source code of the application lives inside the application repository along with the Kubernetes YAMLs needed to deploy the app. Whenever the application code is updated, the build pipeline is triggered, which builds the container images and finally the environment configuration repository is updated with new deployment descriptors. Changes to the environment configuration repository trigger the deployment pipeline.
-
-
-* Pull-based Deployments:
-Pull-based deployment approach, the operator is introduced. here you have a agent installed in the enviroment like in kubernetes cluster it takes over the role of the pipeline by actively pulling the changes from git repository, comparing the desired state in the environment repository with the actual state in the deployed infrastructure. Whenever differences are noticed, the operator updates the infrastructure to match the environment repository. Additionally the image registry can be monitored to find new versions of images to deploy.
+This project demonstrates the implementation of GitOps principles to manage infrastructure and application using AWS Cloudformation. By leveraging Git as the source of truth, changes to infrastructure are automated and deployed seamlessly through CI/CD pipeline.
 
 
-https://volkswagengroup.sharepoint.com/sites/VWITSJAVAFullStackAWSCloudAoE/Shared%20Documents/Forms/AllItems.aspx
+## Prerequisite
+
+1. AWS Account: Ensure you have an AWS account set up.
+2. AWS CLI: Install and configure the AWS Command Line Interface.
+3. Git Repository: Have a Git repository set up for your application code and infrastructure as code (IaC) templates.
+4. GitHub Actions understanding or CI/CD tool understanding like GitLab CI, CircleCI, etc.(In below example we are not using any CI/CD tools)
+5. Store AWS Credential in GitHub Secrets like aws_access_key_id and aws_secreat_access_key
 
 
-https://dev.to/iaadidev/gitops-a-comprehensive-guide-909
+## Project Structure
+
+GitOps
+├── .github                                 <- Github action workflow folder
+│   ├── workflows                           <- Github action workflow folder
+|     ├── deploy.yml                        <- workflow yml file
+├── deployments                             <- GitOps example project directory
+│   ├── dev                                 <- Environment folder
+│   │   ├── clouldformation.yaml            <- cloudformation template for dev env
+│   ├── staging                             
+│   │   ├── clouldformation.yaml            <- cloudformation template for staging env
+│   ├── prod                                
+│   │   ├── clouldformation.yaml            <- cloudformation template for prod env
+|   ├── iam_role.json                       <- IAM role with admin access needed to run cloudformation of AWS
+├── docs                                    <- Documents folder
+├── README.md                               <- Readme file for project understanding
+
+
+
+## Development
+
+Steps to Set Up GitOps with GitHub Actions and AWS CloudFormation
+
+1. Create a GitHub Repository
+
+Store your application code and AWS CloudFormation templates in a GitHub repository. You will use this repository to trigger GitHub Actions workflows.
+
+2. Set Up an AWS IAM User for GitHub Actions
+
+You’ll need to create an IAM user in AWS with programmatic access so that GitHub Actions can interact with AWS resources.
+
+In the AWS Management Console, go to IAM > Users > Add user.
+
+Create a new user with Programmatic access and attach the following policies (adjust as needed):
+AmazonS3FullAccess (or limited S3 permissions)
+AWSCloudFormationFullAccess
+AWSCodeDeployFullAccess (if needed)
+Custom permissions depending on the resources you’re managing via CloudFormation.
+
+Please refer to the example in deployments/iam_role.json for further details.
+
+3. Generate Access Key ID and Secret Access Key for this IAM user. You need store these credentials in GitHub secrets.
+
+4. Store AWS Credentials in GitHub Secrets. To allow GitHub Actions to access AWS resources, store your AWS credentials as GitHub Secrets:
+    1. Go to your GitHub repository.
+    2. Navigate to Settings > Secrets and variables > Actions.
+    3. Add the following secrets:
+        AWS_ACCESS_KEY_ID
+        AWS_SECRET_ACCESS_KEY
+        Optionally, add AWS_REGION as a secret (e.g., us-east-1).
+
+5. Create a GitHub Action Workflow
+
+In your GitHub repository, create a .github/workflows/deploy.yml file that contains your GitHub Actions workflow configuration. This workflow will trigger on changes to your repository and deploy your infrastructure to AWS using CloudFormation.
+
+Refer an example workflow that deploys a CloudFormation stack.
+.github -> workflows -> deploy.yml
+
+Example Determine step dynamically sets the environment based on the branch name.
+
+6. Code Building
+
+Build the cloudformation template or application code in folder structure mention in repo
+
+Refer deployments -> dev/prod/staging -> cloudformation.yaml 
+Example contains environment-specific configurations (e.g., dev, staging, production) for deploying infrastructure using CloudFormation. Each folder includes a cloudformation.yaml file defining AWS resources, eg. as S3 buckets. You can modify these templates to meet your requirements, like changing resource names or adding new resources. The deployment process is automated via the CI/CD pipeline in the .github/workflows/deploy.yml file.
+
+5. Trigger the Workflow
+
+This GitHub Actions workflow will trigger whenever you push changes to the your branch. Here's how it works:
+
+actions/checkout@v3: Checks out your repository so the workflow can access your CloudFormation templates and application code.
+
+aws-actions/configure-aws-credentials@v2: Configures the AWS CLI within the runner using your GitHub Secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_REGION).
+
+aws cloudformation deploy: This command deploys the CloudFormation template. If the stack does not exist, it will be created. If it exists, it will be updated.
+
+
+## Documentation
+
+Detailed explanation about GitOps and CI/CD tools can be found in the docs folder.
+
+docs/gitops.md: For a general overview on what is GitOps and where it can be used.
+
+docs/cd_tools.md: This section explains the different CI/CD tools that can be incorporated into your pipeline for efficient GitOps functionality.

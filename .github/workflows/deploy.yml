@@ -1,0 +1,48 @@
+name: Deploy to AWS based on Enviroment
+
+on:
+  push:
+    # Trigger the workflow when code is pushed to the particular env branch.
+    branches:
+      - main
+      - dev
+      - staging
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Configure AWS credentials using secrets
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    # Step 3: Set environment dynamically
+    - name: Determine Environment
+      id: env
+      run: |
+        if [[ "${{ github.ref_name }}" == "main" ]]; then
+          echo "env=production" >> $GITHUB_ENV
+        elif [[ "${{ github.ref_name }}" == "staging" ]]; then
+          echo "env=staging" >> $GITHUB_ENV
+        else
+          echo "env=dev" >> $GITHUB_ENV
+        fi
+
+    # Step 4: Deploy CloudFormation stack
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file deployments/${{ env.env }}/cloudformation.yaml \
+          --stack-name my-gitops-stack-${{ env.env }} \
+          --parameter-overrides Environment=${{ env.env }} \
+          --capabilities CAPABILITY_NAMED_IAM
